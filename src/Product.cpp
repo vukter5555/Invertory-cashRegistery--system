@@ -83,16 +83,14 @@ void Product::setCategory(const Category& category)
 
 void Product::reduceQuantity(int amount)
 {
-    if(amount > quantity)
-        throw std::out_of_range("Not enough stock.");
-
+    if(amount < 0 || quantity < amount)
+        throw std::out_of_range("Not enough stock or invalid amount.");
     quantity -= amount;
 }
 
 void Product::increaseQuantity(int amount)
 {
-    if(amount <= 0)
-        throw std::out_of_range("Invalid quantity.");
-
+    if(amount < 0)
+        throw std::out_of_range("Invalid amount.");
     quantity += amount;
 }

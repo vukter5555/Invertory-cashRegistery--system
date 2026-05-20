@@ -8,85 +8,70 @@ int main()
 {
     InventorySystem system;
 
-    // Sample data
-    system.addCategory(Category("Drinks"));
-    system.addCategory(Category("Snacks"));
+    // Seeding baseline categories
+    Category drinks("Drinks");
+    Category snacks("Snacks");
 
-    system.addProduct(Product("Cola", 2.5, 10, Category("Drinks"), "D1"));
-    system.addProduct(Product("Water", 1.2, 20, Category("Drinks"), "D2"));
-    system.addProduct(Product("Chips", 3.4, 5, Category("Snacks"), "S1"));
+    system.addCategory(drinks);
+    system.addCategory(snacks);
+
+    // Seeding sample items
+    system.addProduct(Product("Cola", 2.5, 10, drinks, "D1"));
+    system.addProduct(Product("Water", 1.2, 20, drinks, "D2"));
+    system.addProduct(Product("Chips", 3.4, 5, snacks, "S1"));
 
     int choice;
 
-    while (true)
+    do
     {
-        std::cout << "\n============================\n";
-        std::cout << "   INVENTORY SYSTEM MENU\n";
-        std::cout << "============================\n";
-        std::cout << "1. Show all products\n";
-        std::cout << "2. Search product by name\n";
-        std::cout << "3. Show low stock items\n";
-        std::cout << "4. Add new product\n";
-        std::cout << "0. Exit\n";
-        std::cout << "Choose: ";
-        std::cin >> choice;
+        cout << "\n=======================================================\n";
+        cout << "1.Show | 2.SearchName | 3.SearchCat | 4.Sale | 5.LowStock\n";
+        cout << "6.History | 7.Report  | 8.Restock   | 0.Exit\n";
+        cout << "=======================================================\n";
+        cout << "Enter choice: ";
+        if (!(cin >> choice)) break;
 
-        if (choice == 0)
+        switch(choice)
         {
-            std::cout << "Exiting...\n";
+        case 1: 
+            system.showProducts(); 
+            break;
+        case 2:
+        {
+            cout << "Enter product name: ";
+            string n; cin >> n;
+            system.searchByName(n);
             break;
         }
-
-        switch (choice)
+        case 3:
         {
-            case 1:
-                system.showProducts();
-                break;
-
-            case 2:
-            {
-                std::string name;
-                std::cout << "Enter product name: ";
-                std::cin >> name;
-                system.searchByName(name);
-                break;
-            }
-
-            case 3:
-                system.lowStockWarning(5);
-                break;
-
-            case 4:
-            {
-                std::string name, id, categoryName;
-                double price;
-                int qty;
-
-                std::cout << "Enter product name: ";
-                std::cin >> name;
-
-                std::cout << "Enter product id: ";
-                std::cin >> id;
-
-                std::cout << "Enter category: ";
-                std::cin >> categoryName;
-
-                std::cout << "Enter price: ";
-                std::cin >> price;
-
-                std::cout << "Enter quantity: ";
-                std::cin >> qty;
-
-                system.addProduct(Product(name, price, qty, Category(categoryName), id));
-
-                std::cout << "Product added successfully!\n";
-                break;
-            }
-
-            default:
-                std::cout << "Invalid option!\n";
+            cout << "Enter category name: ";
+            string c; cin >> c;
+            system.searchByCategory(c);
+            break;
         }
-    }
+        case 4: 
+            system.makeSale(); 
+            break;
+        case 5: 
+            system.lowStockWarning(5); 
+            break;
+        case 6: 
+            system.showTransactions(); 
+            break;
+        case 7: 
+            system.report(); 
+            break;
+        case 8: 
+            system.restock(); 
+            break;
+        case 0:
+            cout << "Exiting application...\n";
+            break;
+        default:
+            cout << "Invalid selection! Try again.\n";
+        }
+    } while(choice != 0);
 
     return 0;
 }

@@ -2,7 +2,7 @@
 #include <iostream>
 #include <iomanip>
 
-// Explicitly define the constructor that was missing
+// Define the constructor and initialize starting budget
 InventorySystem::InventorySystem() : budget(1000.0) {}
 
 void InventorySystem::addProduct(const Product& p)
@@ -17,15 +17,19 @@ void InventorySystem::addCategory(const Category& c)
 
 void InventorySystem::showProducts() const
 {
-    std::cout << "\n===== PRODUCTS =====\n";
+    std::cout << "\n==================== PRODUCTS ====================\n";
+    std::cout << std::left << std::setw(6) << "ID" 
+              << std::setw(15) << "Name" 
+              << std::setw(12) << "Price" 
+              << std::setw(10) << "Quantity" << "\n";
+    std::cout << "--------------------------------------------------\n";
 
     for (const auto& p : products)
     {
-        // Fixed capitalization here to match Product.h exactly
-        std::cout << std::setw(10) << p.getId()
-                  << " | " << p.getName()
-                  << " | " << p.getPrice()
-                  << " | " << p.getQuantity()
+        std::cout << std::left << std::setw(6) << p.getId()
+                  << std::setw(15) << p.getName()
+                  << std::setw(12) << p.getPrice()
+                  << std::setw(10) << p.getQuantity()
                   << std::endl;
     }
 }
@@ -92,7 +96,7 @@ void InventorySystem::makeSale()
     {
         p->reduceQuantity(qty);
         
-        // Record transaction
+        // Record transaction details
         Transaction currentTransaction;
         TransactionItem item(p, qty);
         currentTransaction.addItem(item);
