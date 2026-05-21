@@ -94,38 +94,60 @@ void InventorySystem::searchByCategory(const std::string& categoryName) const
     
 }
 
+
 void InventorySystem::makeSale()
 {
     Transaction currentTransaction;
+    bool itemsAdded = false;
 
-    while (1)
+    // Clear any leftover newlines from the main menu selection stream
+    std::cin.ignore(10000, '\n'); 
+
+    while (true)
     {
         std::string id;
-        int qty;
         std::cout << "\nEnter product ID to sell (type exit to stop): ";
-        std::cin >> id;
+        
+        // Safety check: if stream fails to read a string, exit safely
+        if (!(std::cin >> id))
+        {
+            std::cin.clear();
+            std::cin.ignore(10000, '\n');
+            break;
+        }
 
-        if(id == "exit")
+        if (id == "exit")
             break;
 
         Product* p = findProductById(id);
         if (!p)
         {
-            std::cout << "Product not found.\n";
-            return;
+            std::cout << "Product not found. Please try again.\n";
+            
+            // FIX: Clear stream and wipe out any stray characters/newlines 
+            // left behind so the next cycle is completely fresh
+            std::cin.clear();
+            std::cin.ignore(10000, '\n');
+            continue; 
         }
 
+        int qty;
         std::cout << "Enter quantity: ";
-        std::cin >> qty;
-
+        if (!(std::cin >> qty))
+        {
+            std::cout << "Invalid quantity format. Skipping item.\n";
+            std::cin.clear();
+            std::cin.ignore(10000, '\n');
+            continue;
+        }
 
         try
         {
             p->reduceQuantity(qty);
         
-            // Record transaction details
             TransactionItem item(p, qty);
             currentTransaction.addItem(item);
+            itemsAdded = true;
             
             std::cout << "\n--- Product added successfully ---\n";
         }
@@ -135,11 +157,19 @@ void InventorySystem::makeSale()
         }
     }
 
-    budget += currentTransaction.getTotal();
-    transactions.push_back(currentTransaction);
-    std::cout << "\n--- Sale successfull ---\n";
-    currentTransaction.printReceipt();
+    if (itemsAdded)
+    {
+        budget += currentTransaction.getTotal();
+        transactions.push_back(currentTransaction);
+        std::cout << "\n--- Sale successful ---\n";
+        currentTransaction.printReceipt();
+    }
+    else
+    {
+        std::cout << "\nSale cancelled or cart was empty.\n";
+    }
 }
+
 
 void InventorySystem::restock()
 {
