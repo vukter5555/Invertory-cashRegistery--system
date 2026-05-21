@@ -29,7 +29,15 @@ int main()
         cout << "6.History | 7.Report  | 8.Restock   | 0.Exit\n";
         cout << "=======================================================\n";
         cout << "Enter choice: ";
-        if (!(cin >> choice)) break;
+        
+        // If reading choice fails (e.g., someone typed characters instead of numbers)
+        if (!(cin >> choice)) {
+            cout << "Invalid input format! Please enter a valid number.\n";
+            cin.clear();                 // Clear the fail state flag
+            cin.ignore(10000, '\n');     // Wipe out the invalid string from the buffer
+            choice = -1;                 // Set to a safe dummy value so it continues looping
+            continue;
+        }
 
         switch(choice)
         {
