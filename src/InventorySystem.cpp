@@ -63,53 +63,79 @@ void InventorySystem::searchByName(const std::string& name) const
 
 void InventorySystem::searchByCategory(const std::string& categoryName) const
 {
-    std::cout << "\n--- Products in Category: " << categoryName << " ---\n";
-    bool found = false;
-    for (const auto& p : products)
+    bool foundc = false;
+    for (const auto& c : categories)
     {
-        if (p.getCategory().getName() == categoryName)
+        if (c.getName() == categoryName)
         {
-            std::cout << "ID: " << p.getId() << " | Name: " << p.getName() << " | Price: " << p.getPrice() << "\n";
-            found = true;
+            foundc = true;
+            break;
         }
     }
-    if (!found) std::cout << "No products found in this category.\n";
+
+    if (foundc == false)
+    {
+        std::cout<< "This category doesn't exist yet.\n";
+    }
+    else
+    {
+        std::cout << "\n--- Products in Category: " << categoryName << " ---\n";
+        bool found = false;
+        for (const auto& p : products)
+        {
+            if (p.getCategory().getName() == categoryName)
+            {
+                std::cout << "ID: " << p.getId() << " | Name: " << p.getName() << " | Price: " << p.getPrice() << "\n";
+                found = true;
+            }
+        }
+        if (!found) std::cout << "No products found in this category.\n";
+    }
+    
 }
 
 void InventorySystem::makeSale()
 {
-    std::string id;
-    int qty;
-    std::cout << "\nEnter product ID to sell: ";
-    std::cin >> id;
-    std::cout << "Enter quantity: ";
-    std::cin >> qty;
-
-    Product* p = findProductById(id);
-    if (!p)
+    while (1)
     {
-        std::cout << "Product not found.\n";
-        return;
-    }
+        std::string id;
+        int qty;
+        std::cout << "\nEnter product ID to sell (type exit to stop): ";
+        std::cin >> id;
 
-    try
-    {
-        p->reduceQuantity(qty);
+        if(id == "exit")
+            break;
+
+        Product* p = findProductById(id);
+        if (!p)
+        {
+            std::cout << "Product not found.\n";
+            return;
+        }
+
+        std::cout << "Enter quantity: ";
+        std::cin >> qty;
+
+
+        try
+        {
+            p->reduceQuantity(qty);
         
-        // Record transaction details
-        Transaction currentTransaction;
-        TransactionItem item(p, qty);
-        currentTransaction.addItem(item);
+            // Record transaction details
+            Transaction currentTransaction;
+            TransactionItem item(p, qty);
+            currentTransaction.addItem(item);
         
-        transactions.push_back(currentTransaction);
-        budget += currentTransaction.getTotal();
+            transactions.push_back(currentTransaction);
+            budget += currentTransaction.getTotal();
 
-        std::cout << "\n--- Sale Successful ---\n";
-        currentTransaction.printReceipt();
-    }
-    catch (const std::exception& e)
-    {
-        std::cout << "Sale failed: " << e.what() << "\n";
+            std::cout << "\n--- Sale Successful ---\n";
+            currentTransaction.printReceipt();
+        }
+        catch (const std::exception& e)
+        {
+            std::cout << "Sale failed: " << e.what() << "\n";
+        }
     }
 }
 
