@@ -177,8 +177,15 @@ void InventorySystem::restock()
     int qty;
     std::cout << "\nEnter product ID to restock: ";
     std::cin >> id;
+    
     std::cout << "Enter quantity: ";
-    std::cin >> qty;
+    if (!(std::cin >> qty))
+    {
+        std::cout << "Error: Invalid quantity amount or numeric overflow!\n";
+        std::cin.clear();              // Fixes the stream right here!
+        std::cin.ignore(10000, '\n');  // Removes the huge number from the memory buffer
+        return;
+    }
 
     Product* p = findProductById(id);
     if (!p)
