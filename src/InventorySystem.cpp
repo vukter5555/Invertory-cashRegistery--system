@@ -96,6 +96,8 @@ void InventorySystem::searchByCategory(const std::string& categoryName) const
 
 void InventorySystem::makeSale()
 {
+    Transaction currentTransaction;
+
     while (1)
     {
         std::string id;
@@ -122,21 +124,21 @@ void InventorySystem::makeSale()
             p->reduceQuantity(qty);
         
             // Record transaction details
-            Transaction currentTransaction;
             TransactionItem item(p, qty);
             currentTransaction.addItem(item);
-        
-            transactions.push_back(currentTransaction);
-            budget += currentTransaction.getTotal();
-
-            std::cout << "\n--- Sale Successful ---\n";
-            currentTransaction.printReceipt();
+            
+            std::cout << "\n--- Product added successfully ---\n";
         }
         catch (const std::exception& e)
         {
-            std::cout << "Sale failed: " << e.what() << "\n";
+            std::cout << "Failed to add product: " << e.what() << "\n";
         }
     }
+
+    budget += currentTransaction.getTotal();
+    transactions.push_back(currentTransaction);
+    std::cout << "\n--- Sale successfull ---\n";
+    currentTransaction.printReceipt();
 }
 
 void InventorySystem::restock()
