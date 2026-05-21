@@ -182,8 +182,8 @@ void InventorySystem::restock()
     if (!(std::cin >> qty))
     {
         std::cout << "Error: Invalid quantity amount or numeric overflow!\n";
-        std::cin.clear();              // Fixes the stream right here!
-        std::cin.ignore(10000, '\n');  // Removes the huge number from the memory buffer
+        std::cin.clear();              
+        std::cin.ignore(10000, '\n');  
         return;
     }
 
@@ -194,16 +194,44 @@ void InventorySystem::restock()
         return;
     }
 
+    double spend = qty * p->getPrice();
+    if (spend > this->budget)
+    {
+        std::cout << "You don't have that much money. Restock failed.\n";
+        return;
+    }
+
+    // FIX: Warning check for spending more than half the budget
+    if (spend >= this->budget / 2)
+    {
+        char confirm;
+        std::cout << "Warning: You will spend " << spend << " $, which is more than half of your current budget (" << this->budget << " $).\n";
+        std::cout << "Are you sure you want to continue? (y/n): ";
+        std::cin >> confirm;
+        
+        // Clean up the input stream buffer so the trailing '\n' doesn't break the main menu
+        std::cin.ignore(10000, '\n');
+
+        if (confirm != 'y' && confirm != 'Y')
+        {
+            std::cout << "Restock cancelled by user.\n";
+            return; // Exit out ONLY if they decide not to proceed
+        }
+    }
+
     try
     {
         p->increaseQuantity(qty);
+        this->budget -= spend; // FIX: Deduct the spent funds from your store budget
         std::cout << "Restocked " << qty << " units of " << p->getName() << " successfully.\n";
+        std::cout << "Remaining budget: " << this->budget << " $\n";
     }
     catch (const std::exception& e)
     {
         std::cout << "Restock failed: " << e.what() << "\n";
     }
 }
+
 
 void InventorySystem::report() const
 {
