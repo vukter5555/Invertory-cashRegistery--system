@@ -30,7 +30,9 @@ public:
     void restock();
 
     void report() const;
-    void showTransactions() const;
+    
+    // UPDATED: Accepts filter integer selection from the menu
+    void showTransactions(int filterChoice) const;
 
     void lowStockWarning(int limit) const;
 };

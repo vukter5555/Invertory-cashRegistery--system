@@ -1,7 +1,7 @@
 #include "Transaction.h"
 #include <iostream>
 
-Transaction::Transaction() : total(0.0) {}
+Transaction::Transaction(TransactionType type) : total(0.0), type(type) {}
 
 void Transaction::addItem(const TransactionItem& item)
 {
@@ -14,6 +14,11 @@ double Transaction::getTotal() const
     return total;
 }
 
+TransactionType Transaction::getType() const
+{
+    return type;
+}
+
 const std::vector<TransactionItem>& Transaction::getItems() const
 {
     return items;
@@ -22,11 +27,16 @@ const std::vector<TransactionItem>& Transaction::getItems() const
 void Transaction::printReceipt() const
 {
     std::cout << "------------------------------------\n";
-    std::cout << "Receipt Details:\n";
+    if (type == TransactionType::RESTOCK) {
+        std::cout << "Receipt Details [VENDOR SUPPLY RESTOCK]:\n";
+    } else {
+        std::cout << "Receipt Details [CUSTOMER CHECKOUT SALE]:\n";
+    }
+    
     for (const auto& item : items)
     {
         item.print();
     }
-    std::cout << "Total Due: " << total << " $\n";
+    std::cout << "Total Value: " << total << " $\n";
     std::cout << "------------------------------------\n";
 }

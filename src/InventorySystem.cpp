@@ -2,7 +2,6 @@
 #include <iostream>
 #include <iomanip>
 
-// Define the constructor and initialize starting budget
 InventorySystem::InventorySystem() : budget(1000.0) {}
 
 void InventorySystem::addProduct(const Product& p)
@@ -73,9 +72,9 @@ void InventorySystem::searchByCategory(const std::string& categoryName) const
         }
     }
 
-    if (foundc == false)
+    if (!foundc)
     {
-        std::cout<< "This category doesn't exist yet.\n";
+        std::cout << "This category doesn't exist yet.\n";
     }
     else
     {
@@ -91,16 +90,14 @@ void InventorySystem::searchByCategory(const std::string& categoryName) const
         }
         if (!found) std::cout << "No products found in this category.\n";
     }
-    
 }
-
 
 void InventorySystem::makeSale()
 {
-    Transaction currentTransaction;
+    // Defaults to TransactionType::SALE
+    Transaction currentTransaction(TransactionType::SALE); 
     bool itemsAdded = false;
 
-    // Clear any leftover newlines from the main menu selection stream
     std::cin.ignore(10000, '\n'); 
 
     while (true)
@@ -108,7 +105,6 @@ void InventorySystem::makeSale()
         std::string id;
         std::cout << "\nEnter product ID to sell (type exit to stop): ";
         
-        // Safety check: if stream fails to read a string, exit safely
         if (!(std::cin >> id))
         {
             std::cin.clear();
@@ -123,9 +119,6 @@ void InventorySystem::makeSale()
         if (!p)
         {
             std::cout << "Product not found. Please try again.\n";
-            
-            // FIX: Clear stream and wipe out any stray characters/newlines 
-            // left behind so the next cycle is completely fresh
             std::cin.clear();
             std::cin.ignore(10000, '\n');
             continue; 
@@ -170,7 +163,6 @@ void InventorySystem::makeSale()
     }
 }
 
-
 void InventorySystem::restock()
 {
     std::string id;
@@ -201,28 +193,32 @@ void InventorySystem::restock()
         return;
     }
 
-    // FIX: Warning check for spending more than half the budget
     if (spend >= this->budget / 2)
     {
         char confirm;
         std::cout << "Warning: You will spend " << spend << " $, which is more than half of your current budget (" << this->budget << " $).\n";
         std::cout << "Are you sure you want to continue? (y/n): ";
         std::cin >> confirm;
-        
-        // Clean up the input stream buffer so the trailing '\n' doesn't break the main menu
         std::cin.ignore(10000, '\n');
 
         if (confirm != 'y' && confirm != 'Y')
         {
             std::cout << "Restock cancelled by user.\n";
-            return; // Exit out ONLY if they decide not to proceed
+            return;
         }
     }
 
     try
     {
         p->increaseQuantity(qty);
-        this->budget -= spend; // FIX: Deduct the spent funds from your store budget
+        this->budget -= spend; 
+
+        // SAVE RECORD: Generates a dedicated restock transaction log entry
+        Transaction restockTx(TransactionType::RESTOCK);
+        TransactionItem item(p, qty);
+        restockTx.addItem(item);
+        transactions.push_back(restockTx); 
+
         std::cout << "Restocked " << qty << " units of " << p->getName() << " successfully.\n";
         std::cout << "Remaining budget: " << this->budget << " $\n";
     }
@@ -232,7 +228,6 @@ void InventorySystem::restock()
     }
 }
 
-
 void InventorySystem::report() const
 {
     std::cout << "\n==================== REPORT ====================\n";
@@ -240,7 +235,7 @@ void InventorySystem::report() const
     std::cout << "Total Transactions Processed: " << transactions.size() << "\n";
 }
 
-void InventorySystem::showTransactions() const
+void InventorySystem::showTransactions(int filterChoice) const
 {
     std::cout << "\n==================== TRANSACTION HISTORY ====================\n";
     if (transactions.empty())
@@ -250,10 +245,25 @@ void InventorySystem::showTransactions() const
     }
 
     int counter = 1;
+    bool foundAny = false;
+
     for (const auto& t : transactions)
     {
-        std::cout << "Transaction #" << counter++ << "\n";
-        t.printReceipt();
+        // filterChoice options: 1 = Only Sales, 2 = Only Restocks, 3 = Show Both Combined
+        if ((filterChoice == 1 && t.getType() == TransactionType::SALE) ||
+            (filterChoice == 2 && t.getType() == TransactionType::RESTOCK) ||
+            (filterChoice == 3))
+        {
+            std::cout << "Transaction #" << counter << "\n";
+            t.printReceipt();
+            foundAny = true;
+        }
+        counter++;
+    }
+
+    if (!foundAny)
+    {
+        std::cout << "No transaction records found matching this filter view configuration.\n";
     }
 }
 
@@ -265,10 +275,9 @@ void InventorySystem::lowStockWarning(int limit) const
     {
         if (p.getQuantity() <= limit)
         {
-            std::cout << "ALERT: Product " << p.getName() << " (ID: " << p.getId() 
-                      << ") is low on stock! Current: " << p.getQuantity() << "\n";
+            std::cout << "ID: " << p.getId() << " | Name: " << p.getName() << " | Stock Remaining: " << p.getQuantity() << "\n";
             alert = true;
         }
     }
-    if (!alert) std::cout << "All items have sufficient stock levels.\n";
+    if (!alert) std::cout << "All items are safely above low-stock thresholds!\n";
 }

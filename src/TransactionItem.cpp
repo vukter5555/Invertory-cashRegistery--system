@@ -11,7 +11,7 @@ Product* TransactionItem::getProduct() const
     return product;
 }
 
-int TransactionItem::getQuantity() const 
+int TransactionItem::getQuantity() const \
 {
     return quantity;
 }
@@ -25,7 +25,7 @@ void TransactionItem::print() const
 {
     if (product) 
     {
-        std::cout << product->getName() << " x" << quantity 
+        std::cout << product->getName() << " x" << quantity \
                   << " | Total: " << getTotalPrice() << std::endl;
     }
 }
