@@ -20,6 +20,7 @@ public:
     void addProduct(const Product& product);
     void removeProduct(const Product& product);
     void removeCategory(const Category& category);
+    Category* findCategoryByName(const std::string& name);
 
 
     Product* findProductById(const std::string& id);

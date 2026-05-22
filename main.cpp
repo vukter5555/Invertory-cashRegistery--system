@@ -31,19 +31,18 @@ int main()
         cout << "====================================================================\n";
         cout << "Enter choice: ";
         
-        // Safety mechanism to catch bad string data or overflows right away
         if (!(cin >> choice)) {
             cout << "Invalid input format! Please enter a valid number.\n";
-            cin.clear();                 // Clear the fail state flag
-            cin.ignore(10000, '\n');     // Wipe out the invalid string from the buffer
-            choice = -1;                 // Set to a safe dummy value so it continues looping
+            cin.clear();                 
+            cin.ignore(10000, '\n');     
+            choice = -1;                 
             continue;
         }
 
         switch(choice)
         {
         case 1: 
-            system.showProducts(); 
+            system.showProducts(); // Prints both Products and Categories now
             break;
         case 2:
         {
@@ -67,7 +66,6 @@ int main()
             break;
         case 6: 
         {
-            // Prompt sub-menu filtering choice
             int subChoice;
             cout << "\nSelect View History Mode:\n";
             cout << "1. Only Customer Sales\n";
@@ -79,7 +77,7 @@ int main()
                 cout << "Invalid selection entry. Defaulting to show full history logs.\n";
                 cin.clear();
                 cin.ignore(10000, '\n');
-                subChoice = 3; // Default fallthrough choice safety state
+                subChoice = 3; 
             }
             
             system.showTransactions(subChoice); 
@@ -92,7 +90,7 @@ int main()
             system.restock(); 
             break;
             
-        case 9: // Add Product
+        case 9: // Add Product with Auto-Category Intercept Choice
         {
             string name, id, catName;
             double price;
@@ -101,7 +99,6 @@ int main()
             cout << "Enter new product ID: ";
             cin >> id;
             
-            // Check if ID already exists to prevent duplicate items
             if (system.findProductById(id) != nullptr) {
                 cout << "Error: A product with ID '" << id << "' already exists!\n";
                 break;
@@ -124,14 +121,33 @@ int main()
             cout << "Enter category name for this product: ";
             cin >> catName;
             
-            // Instantiate a temporary Category object to assign to the product layout
+            // DYNAMIC FIX: Look up if this category already exists in memory
+            Category* existingCat = system.findCategoryByName(catName);
+            
+            if (existingCat == nullptr) {
+                char createChoice;
+                cout << "Warning: Category '" << catName << "' does not exist.\n";
+                cout << "Would you like to register and create this category now? (y/n): ";
+                cin >> createChoice;
+                
+                if (createChoice == 'y' || createChoice == 'Y') {
+                    Category newCat(catName);
+                    system.addCategory(newCat);
+                    cout << "Category '" << catName << "' was successfully created and counted!\n";
+                } else {
+                    cout << "Action cancelled. Product must have a valid monitored category.\n";
+                    break;
+                }
+            }
+            
+            // Bind the validated/newly-added category context directly to the product instance setup
             Category targetCat(catName);
             system.addProduct(Product(name, price, qty, targetCat, id));
             cout << "Product '" << name << "' added successfully.\n";
             break;
         }
         
-        case 10: // Remove Product
+        case 10: 
         {
             string id;
             cout << "Enter product ID to remove: ";
@@ -141,30 +157,31 @@ int main()
             if (p == nullptr) {
                 cout << "Product not found. Removal failed.\n";
             } else {
-                // Pass a temporary matching reference copy for identification matching inside our loop
                 system.removeProduct(*p);
             }
             break;
         }
         
-        case 11: // Add Category
+        case 11: 
         {
             string catName;
             cout << "Enter new category name: ";
             cin >> catName;
             
-            system.addCategory(Category(catName));
-            cout << "Category '" << catName << "' added successfully.\n";
+            if(system.findCategoryByName(catName) != nullptr) {
+                cout << "Category already exists!\n";
+            } else {
+                system.addCategory(Category(catName));
+                cout << "Category '" << catName << "' added successfully.\n";
+            }
             break;
         }
         
-        case 12: // Remove Category
+        case 12: 
         {
             string catName;
             cout << "Enter category name to remove: ";
             cin >> catName;
-            
-            // Trigger cascading vector erasure loops using our input criteria object wrapper
             system.removeCategory(Category(catName));
             break;
         }
