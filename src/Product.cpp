@@ -2,13 +2,8 @@
 #include <stdexcept>
 
 Product::Product()
-    : name(""),
-      price(0),
-      quantity(0),
-      id(""),
-      category("")
-{
-}
+    : name(""), price(0), quantity(0), id(""), category(""), totalUnitsSold(0), totalRevenueGenerated(0.0)
+{}
 
 Product::Product(
     const std::string& name,
@@ -17,80 +12,53 @@ Product::Product(
     const Category& category,
     const std::string& id
 )
-    : name(name),
-      price(price),
-      quantity(quantity),
-      id(id),
-      category(category)
+    : name(name), price(price), quantity(quantity), id(id), category(category), totalUnitsSold(0), totalRevenueGenerated(0.0)
 {
     if(price < 0)
         throw std::out_of_range("Invalid price.");
-
     if(quantity < 0)
         throw std::out_of_range("Invalid quantity.");
 }
 
-std::string Product::getName() const
-{
-    return name;
-}
+std::string Product::getName() const { return name; }
+double Product::getPrice() const { return price; }
+int Product::getQuantity() const { return quantity; }
+std::string Product::getId() const { return id; }
+const Category& Product::getCategory() const { return category; }
+int Product::getTotalUnitsSold() const { return totalUnitsSold; }
+double Product::getTotalRevenueGenerated() const { return totalRevenueGenerated; }
 
-double Product::getPrice() const
-{
-    return price;
-}
-
-int Product::getQuantity() const
-{
-    return quantity;
-}
-
-std::string Product::getId() const
-{
-    return id;
-}
-
-const Category& Product::getCategory() const
-{
-    return category;
-}
-
-void Product::setName(const std::string& name)
-{
-    this->name = name;
-}
+void Product::setName(const std::string& name) { this->name = name; }
 
 void Product::setPrice(double price)
 {
-    if(price < 0)
-        throw std::out_of_range("Invalid price.");
-
+    if(price < 0) throw std::out_of_range("Invalid price.");
     this->price = price;
 }
 
 void Product::setQuantity(int quantity)
 {
-    if(quantity < 0)
-        throw std::out_of_range("Invalid quantity.");
-
+    if(quantity < 0) throw std::out_of_range("Invalid quantity.");
     this->quantity = quantity;
 }
 
-void Product::setCategory(const Category& category)
-{
-    this->category = category;
-}
+void Product::setCategory(const Category& category) { this->category = category; }
 
 void Product::reduceQuantity(int amount)
 {
-    if(amount < 0 || quantity < amount)
-        throw std::out_of_range("Not enough stock or invalid amount.");
+    if (amount <= 0)
+        throw std::invalid_argument("Amount must be positive.");
+    if (amount > quantity)
+        throw std::out_of_range("Insufficient stock.");
+
     quantity -= amount;
+    totalUnitsSold += amount;
+    totalRevenueGenerated += (amount * price);
 }
 
 void Product::increaseQuantity(int amount)
 {
-    if(amount < 0)
-        throw std::out_of_range("Invalid amount.");
+    if (amount <= 0)
+        throw std::invalid_argument("Amount must be positive.");
     quantity += amount;
 }

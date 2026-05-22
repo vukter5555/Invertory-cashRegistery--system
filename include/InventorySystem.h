@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 #include "Product.h"
 #include "Transaction.h"
 
@@ -10,7 +11,6 @@ private:
     std::vector<Product> products;
     std::vector<Category> categories;
     std::vector<Transaction> transactions;
-
     double budget;
 
 public:
@@ -20,13 +20,15 @@ public:
     void addProduct(const Product& product);
     void removeProduct(const Product& product);
     void removeCategory(const Category& category);
-    Category* findCategoryByName(const std::string& name);
-
 
     Product* findProductById(const std::string& id);
+    Category* findCategoryByName(const std::string& name);
+
+    // Dynamic updating methods
+    bool updateProductInformation(const std::string& oldId, const std::string& newId, const std::string& newName, double newPrice);
+    bool updateCategoryInformation(const std::string& oldName, const std::string& newName);
 
     void showProducts() const;
-
     void searchByName(const std::string& name) const;
     void searchByCategory(const std::string& category) const;
 
@@ -34,9 +36,6 @@ public:
     void restock();
 
     void report() const;
-    
-    // UPDATED: Accepts filter integer selection from the menu
     void showTransactions(int filterChoice) const;
-
     void lowStockWarning(int limit) const;
 };

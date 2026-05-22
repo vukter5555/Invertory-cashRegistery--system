@@ -12,6 +12,10 @@ private:
     std::string id;
     Category category;
 
+    // Analytics counters
+    int totalUnitsSold;
+    double totalRevenueGenerated;
+
 public:
     Product();
 
@@ -27,8 +31,10 @@ public:
     double getPrice() const;
     int getQuantity() const;
     std::string getId() const;
-
     const Category& getCategory() const;
+
+    int getTotalUnitsSold() const;
+    double getTotalRevenueGenerated() const;
 
     void setName(const std::string& name);
     void setPrice(double price);
