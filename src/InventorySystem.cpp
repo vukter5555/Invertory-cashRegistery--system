@@ -67,9 +67,13 @@ void InventorySystem::removeCategory(const Category& category)
 
 Product* InventorySystem::findProductById(const std::string& id)
 {
-    std::string searchId = toLower(id);
-    for (auto& p : products) {
-        if (toLower(p.getId()) == searchId) return &p;
+    for (auto& p : products)
+    {
+        // Convert both IDs to lowercase for case-insensitive matching
+        if (p.getId() == id)
+        {
+            return &p;
+        }
     }
     return nullptr;
 }

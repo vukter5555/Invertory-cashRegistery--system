@@ -38,6 +38,7 @@ public:
     void setPrice(double price);
     void setQuantity(int quantity);
     void setCategory(const Category& category);
+    void setId(const std::string& id);
 
     void reduceQuantity(int amount);
     void increaseQuantity(int amount);

@@ -30,6 +30,11 @@ double Product::getTotalRevenueGenerated() const { return totalRevenueGenerated;
 
 void Product::setName(const std::string& name) { this->name = name; }
 
+void Product::setId(const std::string& id) 
+{ 
+    this->id = id; 
+}
+
 void Product::setPrice(double price)
 {
     if (price < 0) throw std::out_of_range("Price cannot be a negative value.");
