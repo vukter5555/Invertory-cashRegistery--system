@@ -1,31 +1,17 @@
 #include "TransactionItem.h"
 #include <iostream>
 
-TransactionItem::TransactionItem() : product(nullptr), quantity(0) {}
+TransactionItem::TransactionItem() : productName(""), customSoldPrice(0.0), quantity(0) {}
 
-TransactionItem::TransactionItem(Product* product, int quantity)
-    : product(product), quantity(quantity) {}
+TransactionItem::TransactionItem(const std::string& name, double soldPrice, int quantity)
+    : productName(name), customSoldPrice(soldPrice), quantity(quantity) {}
 
-Product* TransactionItem::getProduct() const 
-{
-    return product;
-}
-
-int TransactionItem::getQuantity() const \
-{
-    return quantity;
-}
-
-double TransactionItem::getTotalPrice() const 
-{
-    return product ? (product->getPrice() * quantity) : 0.0;
-}
+std::string TransactionItem::getProductName() const { return productName; }
+int TransactionItem::getQuantity() const { return quantity; }
+double TransactionItem::getTotalPrice() const { return customSoldPrice * quantity; }
 
 void TransactionItem::print() const 
 {
-    if (product) 
-    {
-        std::cout << product->getName() << " x" << quantity \
-                  << " | Total: " << getTotalPrice() << std::endl;
-    }
+    std::cout << productName << " x" << quantity 
+              << " | Total: " << getTotalPrice() << " $" << std::endl;
 }

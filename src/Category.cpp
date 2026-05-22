@@ -2,8 +2,7 @@
 
 Category::Category() : name("") {}
 
-Category::Category(const std::string& name)
-    : name(name) {}
+Category::Category(const std::string& name) : name(name) {}
 
 std::string Category::getName() const
 {

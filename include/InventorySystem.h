@@ -1,5 +1,4 @@
 #pragma once
-
 #include <vector>
 #include <string>
 #include "Product.h"
@@ -13,6 +12,8 @@ private:
     std::vector<Transaction> transactions;
     double budget;
 
+    std::string toLower(std::string str) const;
+
 public:
     InventorySystem();
 
@@ -24,7 +25,6 @@ public:
     Product* findProductById(const std::string& id);
     Category* findCategoryByName(const std::string& name);
 
-    // Dynamic updating methods
     bool updateProductInformation(const std::string& oldId, const std::string& newId, const std::string& newName, double newPrice);
     bool updateCategoryInformation(const std::string& oldName, const std::string& newName);
 

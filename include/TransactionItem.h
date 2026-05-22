@@ -1,20 +1,20 @@
 #pragma once
-
-#include "Product.h"
+#include <string>
 
 class TransactionItem
 {
 private:
-    Product* product;
+    std::string productName;
+    double customSoldPrice;
     int quantity;
 
 public:
     TransactionItem();
-    TransactionItem(Product* product, int quantity);
+    // Architectural Fix: Snapshots name and actual transactional pricing dynamically 
+    TransactionItem(const std::string& name, double soldPrice, int quantity);
 
-    Product* getProduct() const;
+    std::string getProductName() const;
     int getQuantity() const;
-
     double getTotalPrice() const;
 
     void print() const;

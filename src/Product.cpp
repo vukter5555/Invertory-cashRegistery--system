@@ -2,7 +2,7 @@
 #include <stdexcept>
 
 Product::Product()
-    : name(""), price(0), quantity(0), id(""), category(""), totalUnitsSold(0), totalRevenueGenerated(0.0)
+    : name(""), price(0.0), quantity(0), id(""), category(""), totalUnitsSold(0), totalRevenueGenerated(0.0)
 {}
 
 Product::Product(
@@ -14,10 +14,10 @@ Product::Product(
 )
     : name(name), price(price), quantity(quantity), id(id), category(category), totalUnitsSold(0), totalRevenueGenerated(0.0)
 {
-    if(price < 0)
-        throw std::out_of_range("Invalid price.");
-    if(quantity < 0)
-        throw std::out_of_range("Invalid quantity.");
+    if (price < 0)
+        throw std::out_of_range("Invalid price initialization parameter.");
+    if (quantity < 0)
+        throw std::out_of_range("Invalid inventory quantity configuration parameters.");
 }
 
 std::string Product::getName() const { return name; }
@@ -32,13 +32,13 @@ void Product::setName(const std::string& name) { this->name = name; }
 
 void Product::setPrice(double price)
 {
-    if(price < 0) throw std::out_of_range("Invalid price.");
+    if (price < 0) throw std::out_of_range("Price cannot be a negative value.");
     this->price = price;
 }
 
 void Product::setQuantity(int quantity)
 {
-    if(quantity < 0) throw std::out_of_range("Invalid quantity.");
+    if (quantity < 0) throw std::out_of_range("Quantity cannot fall below zero units.");
     this->quantity = quantity;
 }
 
@@ -47,18 +47,19 @@ void Product::setCategory(const Category& category) { this->category = category;
 void Product::reduceQuantity(int amount)
 {
     if (amount <= 0)
-        throw std::invalid_argument("Amount must be positive.");
+        throw std::invalid_argument("Amount to deduct must be positive.");
     if (amount > quantity)
-        throw std::out_of_range("Insufficient stock.");
+        throw std::out_of_range("Insufficient stock level available for transaction execution.");
 
     quantity -= amount;
     totalUnitsSold += amount;
-    totalRevenueGenerated += (amount * price);
+    // CRITICAL MATH FIX: Accumulate the accurate price point capturing the active sales markup 
+    totalRevenueGenerated += (price * 1.25 * amount);
 }
 
 void Product::increaseQuantity(int amount)
 {
     if (amount <= 0)
-        throw std::invalid_argument("Amount must be positive.");
+        throw std::invalid_argument("Restock replenishment volume must be positive.");
     quantity += amount;
 }

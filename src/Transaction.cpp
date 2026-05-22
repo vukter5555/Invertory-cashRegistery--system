@@ -9,20 +9,9 @@ void Transaction::addItem(const TransactionItem& item)
     total += item.getTotalPrice();
 }
 
-double Transaction::getTotal() const
-{
-    return total;
-}
-
-TransactionType Transaction::getType() const
-{
-    return type;
-}
-
-const std::vector<TransactionItem>& Transaction::getItems() const
-{
-    return items;
-}
+double Transaction::getTotal() const { return total; }
+TransactionType Transaction::getType() const { return type; }
+const std::vector<TransactionItem>& Transaction::getItems() const { return items; }
 
 void Transaction::printReceipt() const
 {

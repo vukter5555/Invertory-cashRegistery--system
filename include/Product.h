@@ -1,5 +1,4 @@
 #pragma once
-
 #include <string>
 #include "Category.h"
 
@@ -12,13 +11,12 @@ private:
     std::string id;
     Category category;
 
-    // Analytics counters
+    // Financial performance tracking counters
     int totalUnitsSold;
     double totalRevenueGenerated;
 
 public:
     Product();
-
     Product(
         const std::string& name,
         double price,

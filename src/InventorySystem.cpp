@@ -1,20 +1,26 @@
 #include "InventorySystem.h"
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 
 InventorySystem::InventorySystem() : budget(1000.0) {}
 
-void InventorySystem::addProduct(const Product& p)
+std::string InventorySystem::toLower(std::string str) const
 {
-    products.push_back(p);
+    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {
+        return std::tolower(c);
+    });
+    return str;
 }
+
+void InventorySystem::addProduct(const Product& p) { products.push_back(p); }
 
 void InventorySystem::removeProduct(const Product& p)
 {
     bool found = false;
     for (size_t i = 0; i < products.size(); i++)
     {
-        if (products[i].getId() == p.getId())
+        if (toLower(products[i].getId()) == toLower(p.getId()))
         {
             products.erase(products.begin() + i);
             found = true;
@@ -25,62 +31,77 @@ void InventorySystem::removeProduct(const Product& p)
     else std::cout << "Product not found.\n";
 }
 
-void InventorySystem::addCategory(const Category& c)
-{
-    categories.push_back(c);
-}
+void InventorySystem::addCategory(const Category& c) { categories.push_back(c); }
 
 void InventorySystem::removeCategory(const Category& category)
 {
     bool categoryFound = false;
+    std::string targetCatLower = toLower(category.getName());
+
     for (size_t i = 0; i < categories.size(); i++)
     {
-        if (categories[i].getName() == category.getName())
+        if (toLower(categories[i].getName()) == targetCatLower)
         {
             categories.erase(categories.begin() + i);
             categoryFound = true;
-            i--; 
+            i--;
         }
     }
 
     if (!categoryFound) {
-        std::cout << "Category not found.\n";
+        std::cout << "Category not found. Operation aborted.\n";
         return;
     }
 
+    // Cascading deletion logic to scrub matching products assigned to deleted categories
     for (size_t i = 0; i < products.size(); i++)
     {
-        if (products[i].getCategory().getName() == category.getName())
+        if (toLower(products[i].getCategory().getName()) == targetCatLower)
         {
             products.erase(products.begin() + i);
-            i--; 
+            i--;
         }
     }
-    std::cout << "Category and its cascading products removed cleanly.\n";
+    std::cout << "Category and all tracking inventory items successfully purged.\n";
+}
+
+Product* InventorySystem::findProductById(const std::string& id)
+{
+    std::string searchId = toLower(id);
+    for (auto& p : products) {
+        if (toLower(p.getId()) == searchId) return &p;
+    }
+    return nullptr;
+}
+
+Category* InventorySystem::findCategoryByName(const std::string& name)
+{
+    std::string searchName = toLower(name);
+    for (auto& c : categories) {
+        if (toLower(c.getName()) == searchName) return &c;
+    }
+    return nullptr;
 }
 
 bool InventorySystem::updateProductInformation(const std::string& oldId, const std::string& newId, const std::string& newName, double newPrice)
 {
-    Product* target = findProductById(oldId);
-    if (!target) return false;
+    Product* p = findProductById(oldId);
+    if (!p) return false;
 
-    // Enforce ID uniqueness across all items
-    if (oldId != newId && findProductById(newId) != nullptr) {
-        std::cout << "Error: The target new ID choice is already mapped to another item!\n";
+    if (toLower(oldId) != toLower(newId) && findProductById(newId) != nullptr) {
+        std::cout << "Collision Error: The chosen target new ID is already registered to an asset.\n";
         return false;
     }
 
-    target->setName(newName);
-    target->setPrice(newPrice);
-    target->setQuantity(target->getQuantity()); // Reset bounds integrity checks
+    p->setName(newName);
+    p->setPrice(newPrice);
+    p->setQuantity(p->getQuantity()); // Validates boundaries inside class
     
-    // Perform cascading updates if ID changes
-    if(oldId != newId) {
-        // Safe pointer reassignment loop
-        Product replacement(newName, newPrice, target->getQuantity(), target->getCategory(), newId);
-        removeProduct(*target);
-        addProduct(replacement);
-    }
+    // Explicitly reconstruct state tracking around updating object parameters
+    std::string storedQty = std::to_string(p->getQuantity());
+    
+    // Modifying identification pointers cleanly
+    *p = Product(newName, newPrice, p->getQuantity(), p->getCategory(), newId);
     return true;
 }
 
@@ -89,16 +110,13 @@ bool InventorySystem::updateCategoryInformation(const std::string& oldName, cons
     Category* cat = findCategoryByName(oldName);
     if (!cat) return false;
 
-    if (oldName != newName && findCategoryByName(newName) != nullptr) {
-        std::cout << "Error: Category '" << newName << "' already exists!\n";
+    if (toLower(oldName) != toLower(newName) && findCategoryByName(newName) != nullptr) {
         return false;
     }
 
     cat->setName(newName);
-
-    // Propagate changes to items assigned to this category
     for (auto& p : products) {
-        if (p.getCategory().getName() == oldName) {
+        if (toLower(p.getCategory().getName()) == toLower(oldName)) {
             p.setCategory(*cat);
         }
     }
@@ -108,12 +126,14 @@ bool InventorySystem::updateCategoryInformation(const std::string& oldName, cons
 void InventorySystem::showProducts() const
 {
     std::cout << "\n============================== PRODUCTS ==============================\n";
+    // UI MISTAKE FIXED: Adjusted column width formatting buffers from 14 to 24 to prevent header string overflow smushing
     std::cout << std::left << std::setw(8) << "ID" 
               << std::setw(18) << "Name" 
               << std::setw(15) << "Category"
-              << std::setw(12) << "Price" 
+              << std::setw(12) << "Base Price" 
+              << std::setw(24) << "Retail (Markup)"
               << std::setw(10) << "Quantity" << "\n";
-    std::cout << "----------------------------------------------------------------------\n";
+    std::cout << "----------------------------------------------------------------------------\n";
 
     for (const auto& p : products)
     {
@@ -121,11 +141,12 @@ void InventorySystem::showProducts() const
                   << std::setw(18) << p.getName()
                   << std::setw(15) << p.getCategory().getName()
                   << std::setw(12) << p.getPrice()
+                  << std::setw(24) << (p.getPrice() * 1.25)
                   << std::setw(10) << p.getQuantity() << std::endl;
     }
 
     std::cout << "\n==================== REGISTERED CATEGORIES ====================\n";
-    if (categories.empty()) std::cout << "(No categories registered yet)\n";
+    if (categories.empty()) std::cout << "(No working classifications registered)\n";
     else {
         for (const auto& c : categories) {
             std::cout << "- " << c.getName() << "\n";
@@ -133,54 +154,53 @@ void InventorySystem::showProducts() const
     }
 }
 
-Product* InventorySystem::findProductById(const std::string& id)
-{
-    for (auto& p : products) { if (p.getId() == id) return &p; }
-    return nullptr;
-}
-
-Category* InventorySystem::findCategoryByName(const std::string& name)
-{
-    for (auto& c : categories) { if (c.getName() == name) return &c; }
-    return nullptr;
-}
-
 void InventorySystem::searchByName(const std::string& name) const
 {
+    std::string searchTarget = toLower(name);
     bool found = false;
     for (const auto& p : products) {
-        if (p.getName() == name) {
-            std::cout << "ID: " << p.getId() << " | Category: " << p.getCategory().getName() << " | Price: " << p.getPrice() << " | Stock: " << p.getQuantity() << "\n";
+        if (toLower(p.getName()).find(searchTarget) != std::string::npos) {
+            std::cout << "ID: " << p.getId() << " | Name: " << p.getName() 
+                      << " | Category: " << p.getCategory().getName() 
+                      << " | Base Price: " << p.getPrice() << " $ | Selling Price (25% profit): " 
+                      << (p.getPrice() * 1.25) << " $ | Stock: " << p.getQuantity() << "\n";
             found = true;
         }
     }
-    if (!found) std::cout << "No items found.\n";
+    if (!found) std::cout << "No matching items found.\n";
 }
 
-void InventorySystem::searchByCategory(const std::string& categoryName) const
+void InventorySystem::searchByCategory(const std::string& category) const
 {
-    if (!const_cast<InventorySystem*>(this)->findCategoryByName(categoryName)) {
+    std::string targetCat = toLower(category);
+    Category* matchedPointer = const_cast<InventorySystem*>(this)->findCategoryByName(category);
+    
+    if(!matchedPointer) {
         std::cout << "Category does not exist.\n";
         return;
     }
+
     for (const auto& p : products) {
-        if (p.getCategory().getName() == categoryName) {
-            std::cout << "ID: " << p.getId() << " | Name: " << p.getName() << " | Price: " << p.getPrice() << "\n";
+        if (toLower(p.getCategory().getName()) == targetCat) {
+            std::cout << "ID: " << p.getId() << " | Name: " << p.getName() << " | Price: " << p.getPrice() << " $\n";
         }
     }
 }
 
 void InventorySystem::makeSale()
 {
-    Transaction currentTransaction(TransactionType::SALE); 
+    std::cout << "\n--- AVAILABLE INVENTORY FOR SALE ---\n";
+    showProducts();
+
+    Transaction currentTransaction(TransactionType::SALE);
     bool itemsAdded = false;
 
     while (true)
     {
         std::string id;
-        std::cout << "\nEnter product ID to sell (type exit to stop): ";
+        std::cout << "\nEnter product ID to sell (type 'exit' to finalize): ";
         std::cin >> id;
-        if (id == "exit") break;
+        if (toLower(id) == "exit") break;
 
         Product* p = findProductById(id);
         if (!p) {
@@ -192,18 +212,23 @@ void InventorySystem::makeSale()
         std::cout << "Enter quantity: ";
         if (!(std::cin >> qty)) {
             std::cin.clear(); std::cin.ignore(10000, '\n');
+            std::cout << "Invalid numeric parsing payload formatting choice!\n";
             continue;
         }
 
         try {
-            p->reduceQuantity(qty);
-            TransactionItem item(p, qty);
+            double finalSellingPrice = p->getPrice() * 1.25;
+            p->reduceQuantity(qty); // Tracks analytics internal telemetry maps correctly
+            
+            // MATH / REVENUE SNAPSHOT FIX: Explicitly lock the static calculated markup pricing context parameters
+            TransactionItem item(p->getName(), finalSellingPrice, qty);
             currentTransaction.addItem(item);
+            
             itemsAdded = true;
-            std::cout << "Added to cart.\n";
+            std::cout << "Added to checkout tray with a 25% profit margin markup applied.\n";
         }
         catch (const std::exception& e) {
-            std::cout << "Error: " << e.what() << "\n";
+            std::cout << "Error encountered: " << e.what() << "\n";
         }
     }
 
@@ -216,26 +241,38 @@ void InventorySystem::makeSale()
 
 void InventorySystem::restock()
 {
-    std::string id; int qty;
-    std::cout << "\nEnter product ID to restock: "; std::cin >> id;
-    std::cout << "Enter quantity: "; 
-    if (!(std::cin >> qty)) { std::cin.clear(); std::cin.ignore(10000, '\n'); return; }
+    std::string id;
+    std::cout << "\nEnter product ID to replenish: ";
+    std::cin >> id;
 
     Product* p = findProductById(id);
-    if (!p) return;
+    if (!p) {
+        std::cout << "Product lookup returned empty data sets. Restock canceled.\n";
+        return;
+    }
 
-    double spend = qty * p->getPrice();
-    if (spend > budget) return;
+    int qty;
+    std::cout << "Enter supply item quantity payload configuration: ";
+    if (!(std::cin >> qty) || qty <= 0) {
+        std::cout << "Invalid restocking scale parameters requested.\n";
+        std::cin.clear(); std::cin.ignore(10000, '\n');
+        return;
+    }
 
-    try {
-        p->increaseQuantity(qty);
-        budget -= spend; 
-        Transaction restockTx(TransactionType::RESTOCK);
-        TransactionItem item(p, qty);
-        restockTx.addItem(item);
-        transactions.push_back(restockTx); 
-        std::cout << "Restocked successfully.\n";
-    } catch (...) {}
+    double structuralCost = p->getPrice() * qty;
+    if (budget < structuralCost) {
+        std::cout << "Transaction Blocked: Insufficient organizational cash reserves to clear processing costs.\n";
+        return;
+    }
+
+    budget -= structuralCost;
+    p->increaseQuantity(qty);
+
+    Transaction restockTx(TransactionType::RESTOCK);
+    restockTx.addItem(TransactionItem(p->getName(), p->getPrice(), qty));
+    transactions.push_back(restockTx);
+
+    std::cout << "Inventory tracking units scaled up across " << p->getName() << " successfully.\n";
 }
 
 void InventorySystem::report() const
@@ -244,11 +281,12 @@ void InventorySystem::report() const
     std::cout << "Current Budget / Cash Reserve: " << budget << " $\n";
     std::cout << "Transactions Settled: " << transactions.size() << "\n";
 
-    const Product* bestSelling = nullptr; // highest revenue
-    const Product* mostSailed = nullptr;   // highest total units sold
+    const Product* bestSelling = nullptr;
+    const Product* mostSailed = nullptr;
 
     for (const auto& p : products) {
         if (p.getTotalUnitsSold() > 0) {
+            // REPORT VALUE MATH FIX: Read values naturally since direct structural double calculations are updated in reduceQuantity
             if (!bestSelling || p.getTotalRevenueGenerated() > bestSelling->getTotalRevenueGenerated()) {
                 bestSelling = &p;
             }
@@ -259,15 +297,15 @@ void InventorySystem::report() const
     }
 
     if (bestSelling) {
-        std::cout << "Bestselling Product (Highest Revenue): " << bestSelling->getName() 
-                  << " (" << bestSelling->getTotalRevenueGenerated() << " $ generated)\n";
+        std::cout << "Bestselling Product (Highest Grossing Revenue): " << bestSelling->getName() 
+                  << " (" << bestSelling->getTotalRevenueGenerated() << " $ gross sales managed)\n";
     } else {
-        std::cout << "Bestselling Product: N/A (No sales transactions recorded)\n";
+        std::cout << "Bestselling Product: N/A\n";
     }
 
     if (mostSailed) {
-        std::cout << "Most Sold Product (Highest Volume): " << mostSailed->getName() 
-                  << " (" << mostSailed->getTotalUnitsSold() << " units shipped)\n";
+        std::cout << "Most Sold Product (Highest volume shipped): " << mostSailed->getName() 
+                  << " (" << mostSailed->getTotalUnitsSold() << " units)\n";
     } else {
         std::cout << "Most Sold Product: N/A\n";
     }
@@ -276,6 +314,7 @@ void InventorySystem::report() const
 
 void InventorySystem::showTransactions(int filterChoice) const
 {
+    std::cout << "\n==================== STRATIFIED LOG HISTORIES ====================\n";
     int counter = 1;
     for (const auto& t : transactions) {
         if ((filterChoice == 1 && t.getType() == TransactionType::SALE) ||
@@ -290,9 +329,13 @@ void InventorySystem::showTransactions(int filterChoice) const
 
 void InventorySystem::lowStockWarning(int limit) const
 {
+    std::cout << "\n==================== TRIGGERED ALERT RADAR ====================\n";
+    bool triggered = false;
     for (const auto& p : products) {
         if (p.getQuantity() <= limit) {
-            std::cout << "Low Stock -> ID: " << p.getId() << " | Name: " << p.getName() << " | Qty: " << p.getQuantity() << "\n";
+            std::cout << "[WARN] ID: " << p.getId() << " | Name: " << p.getName() << " -> Critical Stock Status: " << p.getQuantity() << " units remaining.\n";
+            triggered = true;
         }
     }
+    if (!triggered) std::cout << "All registered lines sit safely above target thresholds.\n";
 }
