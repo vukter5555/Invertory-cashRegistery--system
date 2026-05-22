@@ -49,11 +49,10 @@ void InventorySystem::removeCategory(const Category& category)
     }
 
     if (!categoryFound) {
-        std::cout << "Category not found. Operation aborted.\n";
+        std::cout << "Category not found.\n";
         return;
     }
 
-    // Cascading deletion logic to scrub matching products assigned to deleted categories
     for (size_t i = 0; i < products.size(); i++)
     {
         if (toLower(products[i].getCategory().getName()) == targetCatLower)
@@ -62,27 +61,25 @@ void InventorySystem::removeCategory(const Category& category)
             i--;
         }
     }
-    std::cout << "Category and all tracking inventory items successfully purged.\n";
+    std::cout << "Category and all its associated products wiped successfully.\n";
 }
 
 Product* InventorySystem::findProductById(const std::string& id)
 {
+    std::string targetIdLower = toLower(id);
     for (auto& p : products)
     {
-        // Convert both IDs to lowercase for case-insensitive matching
-        if (p.getId() == id)
-        {
-            return &p;
-        }
+        if (toLower(p.getId()) == targetIdLower) return &p;
     }
     return nullptr;
 }
 
 Category* InventorySystem::findCategoryByName(const std::string& name)
 {
-    std::string searchName = toLower(name);
-    for (auto& c : categories) {
-        if (toLower(c.getName()) == searchName) return &c;
+    std::string targetNameLower = toLower(name);
+    for (auto& c : categories)
+    {
+        if (toLower(c.getName()) == targetNameLower) return &c;
     }
     return nullptr;
 }
@@ -92,20 +89,16 @@ bool InventorySystem::updateProductInformation(const std::string& oldId, const s
     Product* p = findProductById(oldId);
     if (!p) return false;
 
-    if (toLower(oldId) != toLower(newId) && findProductById(newId) != nullptr) {
-        std::cout << "Collision Error: The chosen target new ID is already registered to an asset.\n";
-        return false;
+    if (toLower(oldId) != toLower(newId)) {
+        if (findProductById(newId) != nullptr) {
+            std::cout << "Error: Product ID collision triggered.\n";
+            return false;
+        }
     }
 
+    p->setId(newId);
     p->setName(newName);
     p->setPrice(newPrice);
-    p->setQuantity(p->getQuantity()); // Validates boundaries inside class
-    
-    // Explicitly reconstruct state tracking around updating object parameters
-    std::string storedQty = std::to_string(p->getQuantity());
-    
-    // Modifying identification pointers cleanly
-    *p = Product(newName, newPrice, p->getQuantity(), p->getCategory(), newId);
     return true;
 }
 
@@ -114,14 +107,18 @@ bool InventorySystem::updateCategoryInformation(const std::string& oldName, cons
     Category* cat = findCategoryByName(oldName);
     if (!cat) return false;
 
-    if (toLower(oldName) != toLower(newName) && findCategoryByName(newName) != nullptr) {
-        return false;
+    if (toLower(oldName) != toLower(newName)) {
+        if (findCategoryByName(newName) != nullptr) return false;
     }
 
+    std::string oldTitleUnchanged = cat->getName();
     cat->setName(newName);
-    for (auto& p : products) {
-        if (toLower(p.getCategory().getName()) == toLower(oldName)) {
-            p.setCategory(*cat);
+
+    for (auto& p : products)
+    {
+        if (toLower(p.getCategory().getName()) == toLower(oldTitleUnchanged))
+        {
+            p.setCategory(*cat); // Коригирано на p. вместо p->
         }
     }
     return true;
@@ -129,168 +126,206 @@ bool InventorySystem::updateCategoryInformation(const std::string& oldName, cons
 
 void InventorySystem::showProducts() const
 {
-    std::cout << "\n============================== PRODUCTS ==============================\n";
-    // UI MISTAKE FIXED: Adjusted column width formatting buffers from 14 to 24 to prevent header string overflow smushing
-    std::cout << std::left << std::setw(8) << "ID" 
-              << std::setw(18) << "Name" 
-              << std::setw(15) << "Category"
-              << std::setw(12) << "Base Price" 
-              << std::setw(24) << "Retail (Markup)"
-              << std::setw(10) << "Quantity" << "\n";
-    std::cout << "----------------------------------------------------------------------------\n";
-
-    for (const auto& p : products)
-    {
-        std::cout << std::left << std::setw(8) << p.getId()
-                  << std::setw(18) << p.getName()
-                  << std::setw(15) << p.getCategory().getName()
-                  << std::setw(12) << p.getPrice()
-                  << std::setw(24) << (p.getPrice() * 1.25)
-                  << std::setw(10) << p.getQuantity() << std::endl;
-    }
-
-    std::cout << "\n==================== REGISTERED CATEGORIES ====================\n";
-    if (categories.empty()) std::cout << "(No working classifications registered)\n";
-    else {
-        for (const auto& c : categories) {
-            std::cout << "- " << c.getName() << "\n";
+    std::cout << "\n==================== WAREHOUSE INVENTORY STOCK LEDGER ====================\n";
+    if (products.empty()) {
+        std::cout << "   [No registered products found in active memory]\n";
+    } else {
+        for (const auto& p : products)
+        {
+            std::cout << "ID: " << p.getId() << " | Name: " << p.getName() 
+                      << " | Category: " << p.getCategory().getName()
+                      << " | Retail Price: " << p.getPrice() << " $"
+                      << " | Stock Volume: " << p.getQuantity() << " units\n";
         }
     }
+    std::cout << "=========================================================================\n";
 }
 
 void InventorySystem::searchByName(const std::string& name) const
 {
-    std::string searchTarget = toLower(name);
+    std::cout << "\n-------------------- SEARCH RESULTS (NAME) --------------------\n";
     bool found = false;
-    for (const auto& p : products) {
-        if (toLower(p.getName()).find(searchTarget) != std::string::npos) {
+    std::string searchLower = toLower(name);
+    for (const auto& p : products)
+    {
+        if (toLower(p.getName()).find(searchLower) != std::string::npos)
+        {
             std::cout << "ID: " << p.getId() << " | Name: " << p.getName() 
-                      << " | Category: " << p.getCategory().getName() 
-                      << " | Base Price: " << p.getPrice() << " $ | Selling Price (25% profit): " 
-                      << (p.getPrice() * 1.25) << " $ | Stock: " << p.getQuantity() << "\n";
+                      << " | Category: " << p.getCategory().getName()
+                      << " | Price: " << p.getPrice() << " $ | Stock: " << p.getQuantity() << " units\n";
             found = true;
         }
     }
-    if (!found) std::cout << "No matching items found.\n";
+    if (!found) std::cout << "No items matches the query parameters.\n";
+    std::cout << "---------------------------------------------------------------\n";
 }
 
 void InventorySystem::searchByCategory(const std::string& category) const
 {
-    std::string targetCat = toLower(category);
-    Category* matchedPointer = const_cast<InventorySystem*>(this)->findCategoryByName(category);
-    
-    if(!matchedPointer) {
-        std::cout << "Category does not exist.\n";
-        return;
-    }
-
-    for (const auto& p : products) {
-        if (toLower(p.getCategory().getName()) == targetCat) {
-            std::cout << "ID: " << p.getId() << " | Name: " << p.getName() << " | Price: " << p.getPrice() << " $\n";
+    std::cout << "\n-------------------- SEARCH RESULTS (CATEGORY) --------------------\n";
+    bool found = false;
+    std::string searchLower = toLower(category);
+    for (const auto& p : products)
+    {
+        if (toLower(p.getCategory().getName()) == searchLower)
+        {
+            std::cout << "ID: " << p.getId() << " | Name: " << p.getName() 
+                      << " | Price: " << p.getPrice() << " $ | Stock: " << p.getQuantity() << " units\n";
+            found = true;
         }
     }
+    if (!found) std::cout << "No items mapped under the queried organizational node.\n";
+    std::cout << "-------------------------------------------------------------------\n";
 }
 
 void InventorySystem::makeSale()
 {
-    std::cout << "\n--- AVAILABLE INVENTORY FOR SALE ---\n";
-    showProducts();
+    std::cout << "\n==================== TRANSACTION MANAGEMENT TERMINAL ====================\n";
+    
+    // Подобрение: Показва всички продукти в реално време преди започване на продажбата
+    std::cout << "Available Active Products List:\n";
+    if (products.empty()) {
+        std::cout << "   [No items available in storage blueprint]\n";
+    } else {
+        for (const auto& p : products) {
+            std::cout << "   ID: " << p.getId() << " | Name: " << p.getName() 
+                      << " | Price: " << p.getPrice() << " $ | In Stock: " << p.getQuantity() << " units\n";
+        }
+    }
+    std::cout << "-----------------------------------------------------------------------\n";
+    std::cout << "(Type 'exit' at any time inside the ID prompt to complete and print invoice)\n\n";
 
-    Transaction currentTransaction(TransactionType::SALE);
-    bool itemsAdded = false;
+    Transaction t(TransactionType::SALE);
+    std::string inputId;
+    int amount;
 
-    while (true)
-    {
-        std::string id;
-        std::cout << "\nEnter product ID to sell (type 'exit' to finalize): ";
-        std::cin >> id;
-        if (toLower(id) == "exit") break;
+    while (true) {
+        std::cout << "Enter Product ID to purchase (or 'exit'): ";
+        std::cin >> inputId;
 
-        Product* p = findProductById(id);
-        if (!p) {
-            std::cout << "Product not found.\n";
-            continue; 
+        if (toLower(inputId) == "exit") {
+            break; // Изход от режима на маркиране
         }
 
-        int qty;
-        std::cout << "Enter quantity: ";
-        if (!(std::cin >> qty)) {
-            std::cin.clear(); std::cin.ignore(10000, '\n');
-            std::cout << "Invalid numeric parsing payload formatting choice!\n";
-            continue;
+        Product* p = findProductById(inputId);
+        if (!p) {
+            std::cout << "[ERROR]: Reference key non-existent. Please try again or type 'exit'.\n\n";
+            continue; // Продължава цикъла без да прекъсва сметката
+        }
+
+        std::cout << "-> Selected: '" << p->getName() << "' | Units Available: " << p->getQuantity() << "\n";
+        std::cout << "Enter quantity to sell: ";
+        
+        if (!(std::cin >> amount) || amount <= 0) {
+            std::cout << "[ERROR]: Invalid quantity format specification.\n\n";
+            std::cin.clear();
+            std::cin.ignore(10000, '\n');
+            continue; // Продължава напред
         }
 
         try {
-            double finalSellingPrice = p->getPrice() * 1.25;
-            p->reduceQuantity(qty); // Tracks analytics internal telemetry maps correctly
-            
-            // MATH / REVENUE SNAPSHOT FIX: Explicitly lock the static calculated markup pricing context parameters
-            TransactionItem item(p->getName(), finalSellingPrice, qty);
-            currentTransaction.addItem(item);
-            
-            itemsAdded = true;
-            std::cout << "Added to checkout tray with a 25% profit margin markup applied.\n";
+            p->reduceQuantity(amount);
+            t.addItem(TransactionItem(p->getName(), p->getPrice(), amount));
+            std::cout << "-> Linked: Successfully added to active transaction list.\n\n";
         }
-        catch (const std::exception& e) {
-            std::cout << "Error encountered: " << e.what() << "\n";
+        catch (const std::exception& errorEntity) {
+            std::cout << "[REJECTED]: " << errorEntity.what() << "\n\n";
         }
     }
 
-    if (itemsAdded) {
-        budget += currentTransaction.getTotal();
-        transactions.push_back(currentTransaction);
-        currentTransaction.printReceipt();
+    if (t.getTotal() > 0) {
+        transactions.push_back(t);
+        std::cout << "\nCheckout completed. Printing final transaction receipt:\n";
+        t.printReceipt();
+    } else {
+        std::cout << "Notice: Empty basket transaction discarded.\n";
     }
 }
 
 void InventorySystem::restock()
 {
+    std::cout << "\n==================== RESTOCK LOGISTICS PROCUREMENT ====================\n";
+    
+    std::cout << "Available Products in Warehouse Inventory:\n";
+    if (products.empty()) {
+        std::cout << "   [No products registered in the database yet]\n";
+        return;
+    } else {
+        for (const auto& p : products) {
+            std::cout << "   ID: " << p.getId() << " | Name: " << p.getName() 
+                      << " | Current Stock: " << p.getQuantity() << " units | Shelf Price: " << p.getPrice() << " $\n";
+        }
+    }
+    std::cout << "-----------------------------------------------------------------------\n";
+
     std::string id;
-    std::cout << "\nEnter product ID to replenish: ";
+    std::cout << "Enter product ID to replenish: ";
     std::cin >> id;
 
     Product* p = findProductById(id);
     if (!p) {
-        std::cout << "Product lookup returned empty data sets. Restock canceled.\n";
+        std::cout << "Error: Target asset reference missing from infrastructure system.\n";
         return;
     }
 
-    int qty;
-    std::cout << "Enter supply item quantity payload configuration: ";
-    if (!(std::cin >> qty) || qty <= 0) {
-        std::cout << "Invalid restocking scale parameters requested.\n";
+    int amount;
+    std::cout << "Enter replenishment quantity volume: ";
+    if (!(std::cin >> amount) || amount <= 0) {
+        std::cout << "Invalid quantity entry. Procurement aborted.\n";
         std::cin.clear(); std::cin.ignore(10000, '\n');
         return;
     }
 
-    double structuralCost = p->getPrice() * qty;
-    if (budget < structuralCost) {
-        std::cout << "Transaction Blocked: Insufficient organizational cash reserves to clear processing costs.\n";
+    double customSupplyPrice;
+    std::cout << "Enter actual unit supply purchase price (Cost from supplier): ";
+    if (!(std::cin >> customSupplyPrice) || customSupplyPrice < 0) {
+        std::cout << "Invalid supply price entry. Procurement aborted.\n";
+        std::cin.clear(); std::cin.ignore(10000, '\n');
         return;
     }
 
-    budget -= structuralCost;
-    p->increaseQuantity(qty);
+    double totalCost = customSupplyPrice * amount;
+    if (totalCost > budget) {
+        std::cout << "PROCUREMENT REJECTED: Total cost (" << totalCost 
+                  << " $) exceeds available corporate budget (" << budget << " $).\n";
+        return;
+    }
 
-    Transaction restockTx(TransactionType::RESTOCK);
-    restockTx.addItem(TransactionItem(p->getName(), p->getPrice(), qty));
-    transactions.push_back(restockTx);
+    // Промяна: Винаги иска изрично потвърждение преди задействане на покупката
+    char confirmChoice;
+    std::cout << "\nSummary: You are about to transfer " << totalCost << " $ from the corporate balance sheet.\n";
+    std::cout << "Confirm corporate authorization payment? (y/n): ";
+    std::cin >> confirmChoice;
+    if (confirmChoice != 'y' && confirmChoice != 'Y') {
+        std::cout << "Procurement explicit cancelled by administrative bypass control.\n";
+        return;
+    }
 
-    std::cout << "Inventory tracking units scaled up across " << p->getName() << " successfully.\n";
+    budget -= totalCost;
+    p->increaseQuantity(amount);
+
+    Transaction t(TransactionType::RESTOCK);
+    t.addItem(TransactionItem(p->getName(), customSupplyPrice, amount));
+    transactions.push_back(t);
+
+    std::cout << "SUCCESS: Procured " << amount << " units of '" << p->getName() 
+              << "' at " << customSupplyPrice << " $ each.\n";
+    std::cout << "Remaining budget: " << budget << " $\n";
 }
 
 void InventorySystem::report() const
 {
-    std::cout << "\n==================== ANALYTICS REPORT ====================\n";
-    std::cout << "Current Budget / Cash Reserve: " << budget << " $\n";
-    std::cout << "Transactions Settled: " << transactions.size() << "\n";
+    std::cout << "\n==================== FINANCIAL PERFORMANCE REPORT ====================\n";
+    std::cout << "Current Corporate Liquidity Budget: " << budget << " $\n";
+    std::cout << "Total Active Stock Ledger Items   : " << products.size() << " products\n";
+    std::cout << "----------------------------------------------------------\n";
 
     const Product* bestSelling = nullptr;
     const Product* mostSailed = nullptr;
 
-    for (const auto& p : products) {
+    for (const auto& p : products)
+    {
         if (p.getTotalUnitsSold() > 0) {
-            // REPORT VALUE MATH FIX: Read values naturally since direct structural double calculations are updated in reduceQuantity
             if (!bestSelling || p.getTotalRevenueGenerated() > bestSelling->getTotalRevenueGenerated()) {
                 bestSelling = &p;
             }
@@ -301,8 +336,8 @@ void InventorySystem::report() const
     }
 
     if (bestSelling) {
-        std::cout << "Bestselling Product (Highest Grossing Revenue): " << bestSelling->getName() 
-                  << " (" << bestSelling->getTotalRevenueGenerated() << " $ gross sales managed)\n";
+        std::cout << "Bestselling Product (Highest Revenue): " << bestSelling->getName() 
+                  << " (\"" << bestSelling->getTotalRevenueGenerated() << " $\" generated)\n";
     } else {
         std::cout << "Bestselling Product: N/A\n";
     }
@@ -337,9 +372,13 @@ void InventorySystem::lowStockWarning(int limit) const
     bool triggered = false;
     for (const auto& p : products) {
         if (p.getQuantity() <= limit) {
-            std::cout << "[WARN] ID: " << p.getId() << " | Name: " << p.getName() << " -> Critical Stock Status: " << p.getQuantity() << " units remaining.\n";
+            std::cout << "[WARN] ID: " << p.getId() << " | Name: " << p.getName() 
+                      << " | Stock remaining: " << p.getQuantity() << " units!\n";
             triggered = true;
         }
     }
-    if (!triggered) std::cout << "All registered lines sit safely above target thresholds.\n";
+    if (!triggered) {
+        std::cout << "All inventory stocks are safely above the minimum designated baseline.\n";
+    }
+    std::cout << "===============================================================\n";
 }

@@ -58,8 +58,8 @@ void Product::reduceQuantity(int amount)
 
     quantity -= amount;
     totalUnitsSold += amount;
-    // CRITICAL MATH FIX: Accumulate the accurate price point capturing the active sales markup 
-    totalRevenueGenerated += (price * 1.25 * amount);
+    
+    totalRevenueGenerated += (price * amount);
 }
 
 void Product::increaseQuantity(int amount)

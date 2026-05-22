@@ -32,206 +32,182 @@ int main()
             cout << "Invalid selection entered.\n";
             cin.clear(); 
             cin.ignore(10000, '\n');
-            choice = -1; 
             continue;
         }
 
-        switch(choice)
+        switch (choice)
         {
-        case 1: 
-            system.showProducts(); 
-            break;
-        case 2:
+        case 1: system.showProducts(); break;
+        case 2: 
         {
-            int opt;
-            cout << "\nSearch Options:\n1. Search by Name\n2. Search by ID\nEnter choice (1-2): ";
-            if (!(cin >> opt)) { 
-                cin.clear(); 
-                cin.ignore(10000, '\n'); 
-                cout << "Invalid numerical input formatting entry.\n";
-                break; 
+            int searchMode;
+            cout << "Choose search parameters: (1) Search by custom Product ID | (2) Search by text Name pattern: ";
+            if (!(cin >> searchMode)) {
+                cin.clear(); cin.ignore(10000, '\n');
+                cout << "Invalid mode.\n"; break;
             }
-            
-            if (opt == 1) {
-                string term; cout << "Enter search term: "; cin >> term;
-                system.searchByName(term);
-            } 
-            else if (opt == 2) {
-                string id; cout << "Enter search ID: "; cin >> id;
-                Product* ptr = system.findProductById(id);
-                if (ptr) {
-                    // Print the found match directly using its case-insensitive matching logic
-                    cout << "\nMatch found:\n";
-                    cout << "ID: " << ptr->getId() << " | Name: " << ptr->getName() 
-                         << " | Price: " << ptr->getPrice() << " | Stock: " << ptr->getQuantity() << "\n";
+            if (searchMode == 1) {
+                string id; cout << "Enter precise product unique ID to find: "; cin >> id;
+                Product* p = system.findProductById(id);
+                if (p) {
+                    cout << "Match found: ID: " << p->getId() << " | Name: " << p->getName() 
+                          << " | Category: " << p->getCategory().getName() << " | Shelf Price: " << p->getPrice() 
+                          << " $ | Stock Volume: " << p->getQuantity() << " units\n";
                 } else {
-                    cout << "No matching ID found.\n";
+                    cout << "No entity corresponds to that identification parameters.\n";
                 }
-            } 
-            else {
-                cout << "Invalid menu selection! Please choose strictly 1 or 2.\n";
+            } else {
+                string name; cout << "Enter name snippet query string: "; cin >> name;
+                system.searchByName(name);
             }
             break;
         }
-        case 3:
+        case 3: 
         {
-            string catName; cout << "Enter category name: "; cin >> catName;
-            system.searchByCategory(catName);
-            break;
+            string catName; cout << "Enter category organizational folder title: "; cin >> catName;
+            system.searchByCategory(catName); break;
         }
-        case 4: 
-            system.makeSale(); 
-            break;
+        case 4: system.makeSale(); break;
         case 5: 
         {
-            int lim; cout << "Enter low stock checking threshold limit: ";
-            if (!(cin >> lim)) { cin.clear(); cin.ignore(10000, '\n'); lim = 5; }
-            system.lowStockWarning(lim); 
-            break;
+            int limit; cout << "Enter safety threshold margin volume (integer units limit): ";
+            if (!(cin >> limit)) {
+                cin.clear(); cin.ignore(10000, '\n');
+                cout << "Invalid input.\n"; break;
+            }
+            system.lowStockWarning(limit); break;
         }
         case 6: 
         {
-            int subChoice;
-            cout << "1.Sales | 2.Restocks | 3.Combined: ";
-            if (!(cin >> subChoice)) { cin.clear(); cin.ignore(10000, '\n'); subChoice = 3; }
-            system.showTransactions(subChoice); 
-            break;
+            int filter; 
+            cout << "Set structural parsing filters: (1) Output SALES logs only | (2) Output RESTOCKS logs only | (3) Fetch complete array logs: ";
+            if (!(cin >> filter) || filter < 1 || filter > 3) {
+                cin.clear(); cin.ignore(10000, '\n');
+                cout << "Invalid criteria.\n"; break;
+            }
+            system.showTransactions(filter); break;
         }
-        case 7: 
-            system.report(); 
-            break;
-        case 8: 
-            system.restock(); 
-            break;
-        case 9:
+        case 7: system.report(); break;
+        case 8: system.restock(); break;
+        case 9: 
         {
-            string name, id, cName; double bPrice; int initialQty;
-            cout << "Enter ID: "; cin >> id;
-            if (system.findProductById(id)) { cout << "Error: Duplicate product ID assigned (Case-Insensitive match found).\n"; break; }
-            cout << "Enter name: "; cin >> name;
-            cout << "Enter tracking category name: "; cin >> cName;
+            string name, id, catName; double price; int qty;
+            cout << "Enter alphanumeric unique item identification (Product ID): "; cin >> id;
+            cout << "Enter nominal name: "; cin >> name;
+            cout << "Enter target group node name (Category): "; cin >> catName;
+            cout << "Enter product retail shelf price: "; 
+            if (!(cin >> price) || price < 0) {
+                cout << "Invalid price signature registration rejected.\n";
+                cin.clear(); cin.ignore(10000, '\n'); break;
+            }
+            cout << "Enter initial stock quantity value: ";
+            if (!(cin >> qty) || qty < 0) {
+                cout << "Invalid volume initialization metrics rejected.\n";
+                cin.clear(); cin.ignore(10000, '\n'); break;
+            }
             
-            Category* catPtr = system.findCategoryByName(cName);
-            
-            if (!catPtr) { 
-                char createChoice;
-                cout << "Category '" << cName << "' does not exist. Create it now? (y/n): ";
-                cin >> createChoice;
-                
-                if (createChoice == 'y' || createChoice == 'Y') {
-                    system.addCategory(Category(cName));
-                    catPtr = system.findCategoryByName(cName); 
-                    cout << "Category '" << cName << "' successfully registered into memory.\n";
+            Category* catRef = system.findCategoryByName(catName);
+            if (!catRef) {
+                char creationPrompt;
+                cout << "Warning: Parent category '" << catName << "' does not exist. Auto-generate node category? (y/n): ";
+                cin >> creationPrompt;
+                if (creationPrompt == 'y' || creationPrompt == 'Y') {
+                    system.addCategory(Category(catName));
+                    catRef = system.findCategoryByName(catName);
+                    cout << "Category infrastructure dynamically updated.\n";
                 } else {
-                    cout << "Operation aborted. Product creation cancelled due to missing category mapping.\n";
-                    break; 
+                    cout << "Operation aborted: Product cannot stand orphaned from a category node.\n";
+                    break;
                 }
             }
             
-            cout << "Enter initialization baseline price: "; cin >> bPrice;
-            cout << "Enter opening stock quantities: "; cin >> initialQty;
-            system.addProduct(Product(name, bPrice, initialQty, *catPtr, id));
-            cout << "Product successfully created.\n";
+            system.addProduct(Product(name, price, qty, *catRef, id));
+            cout << "Product record initialized into stock layers.\n";
             break;
         }
-        case 10:
+        case 10: 
         {
-            string id; cout << "Enter asset ID to clean from database: "; cin >> id;
+            string id; cout << "Enter product ID to purge from catalog: "; cin >> id;
             Product* p = system.findProductById(id);
-            if(p) system.removeProduct(*p);
-            else cout << "Asset reference empty.\n";
+            if (p) system.removeProduct(*p);
+            else cout << "Target asset missing from registry lookup operations.\n";
             break;
         }
-        case 11:
+        case 11: 
         {
-            string catName; cout << "Enter new structural identity context name: "; cin >> catName;
-            system.addCategory(Category(catName)); break;
+            string catName; cout << "Enter structural classification group title (Category Name): "; cin >> catName;
+            if (system.findCategoryByName(catName)) {
+                cout << "Collision error: Node title exists in data trees.\n";
+            } else {
+                system.addCategory(Category(catName));
+                cout << "Category profile registered.\n";
+            }
+            break;
         }
-        case 12:
+        case 12: 
         {
             string catName; cout << "Enter category name to wipe: "; cin >> catName;
             system.removeCategory(Category(catName)); break;
         }
-        case 13: // Edit Product Information (Selective Details)
+        case 13: 
         {
-            string oldId;
-            cout << "Enter current product ID to edit: "; 
-            cin >> oldId;
-            
+            string oldId, newId, newName; double newPrice; int newQty;
+            cout << "Enter current product ID to edit: "; cin >> oldId;
             Product* p = system.findProductById(oldId);
             if (!p) {
-                cout << "Product not found.\n"; 
-                break;
+                cout << "Product not found.\n"; break;
             }
-
-            int editChoice;
-            cout << "\nWhat would you like to modify?\n";
-            cout << "1. Only ID\n";
-            cout << "2. Only Name\n";
-            cout << "3. Only Price\n";
-            cout << "4. Only Quantity (Inventory Shrinkage/Correction)\n";
-            cout << "5. Everything (ID, Name, Price, and Quantity)\n";
-            cout << "Enter choice (1-5): ";
             
-            if (!(cin >> editChoice) || editChoice < 1 || editChoice > 5) {
-                cout << "Invalid selection. Aborting modifications.\n";
-                cin.clear();
-                cin.ignore(10000, '\n');
-                break;
+            int subChoice;
+            cout << "Edit Fields Menu:\n";
+            cout << " (1) Selectively alter specific items fields\n";
+            cout << " (2) Rewrite all data parameters holistically\n";
+            cout << "Enter menu subset option choice: ";
+            if (!(cin >> subChoice)) {
+                cin.clear(); cin.ignore(10000, '\n'); break;
             }
-
-            if (editChoice == 1) { // Only ID
-                string newId;
-                cout << "Enter new unique ID: "; cin >> newId;
-                
-                // Case-insensitive duplicate checking
-                Product* duplicateCheck = system.findProductById(newId);
-                if (duplicateCheck && duplicateCheck != p) {
-                    cout << "Error: New ID matches an existing product in the system.\n";
-                } else {
-                    p->setId(newId);
-                    cout << "Product ID updated successfully.\n";
-                }
-            }
-            else if (editChoice == 2) { // Only Name
-                string newName;
-                cout << "Enter new name: "; cin >> newName;
-                p->setName(newName);
-                cout << "Product name updated successfully.\n";
-            }
-            else if (editChoice == 3) { // Only Price
-                double newPrice;
-                cout << "Enter new price: ";
-                if (!(cin >> newPrice) || newPrice < 0) {
-                    cout << "Invalid price entry.\n";
-                    cin.clear(); cin.ignore(10000, '\n');
-                } else {
-                    p->setPrice(newPrice);
-                    cout << "Product price updated successfully.\n";
-                }
-            }
-            else if (editChoice == 4) { // Only Quantity
-                int newQty;
-                cout << "Current stock: " << p->getQuantity() << "\n";
-                cout << "Enter updated stock quantity count: ";
-                if (!(cin >> newQty) || newQty < 0) {
-                    cout << "Invalid stock quantity level configuration.\n";
-                    cin.clear(); cin.ignore(10000, '\n');
-                } else {
-                    p->setQuantity(newQty);
-                    cout << "Product quantity updated successfully in records.\n";
-                }
-            }
-            else if (editChoice == 5) { // Everything
-                string newId, newName; double newPrice; int newQty;
-                cout << "Enter new unique ID: "; cin >> newId;
-                
-                Product* duplicateCheck = system.findProductById(newId);
-                if (duplicateCheck && duplicateCheck != p) {
-                    cout << "Error: New ID matches an existing product in the system.\n";
-                    break;
+            
+            if (subChoice == 1) {
+                int fieldChoice;
+                cout << "   [1] Modify Product ID Code\n"
+                     << "   [2] Modify Product Text Name\n"
+                     << "   [3] Update Base Retail Pricing\n"
+                     << "   [4] Modify Inventory Quantities (Shrinkage/Wastage adjustments)\n"
+                     << "   Enter selection index: ";
+                if (!(cin >> fieldChoice)) {
+                    cin.clear(); cin.ignore(10000, '\n'); break;
                 }
                 
+                if (fieldChoice == 1) {
+                    cout << "Enter alternative unique Product ID: "; cin >> newId;
+                    if (system.updateProductInformation(oldId, newId, p->getName(), p->getPrice())) {
+                        cout << "Unique key assignment verified.\n";
+                    }
+                } else if (fieldChoice == 2) {
+                    cout << "Enter new name token: "; cin >> newName;
+                    p->setName(newName);
+                    cout << "Name properties modified.\n";
+                } else if (fieldChoice == 3) {
+                    cout << "Enter new updated price value: ";
+                    if (cin >> newPrice && newPrice >= 0) {
+                        p->setPrice(newPrice);
+                        cout << "Pricing parameters adjusted.\n";
+                    } else {
+                        cout << "Validation error: Negative value rejected.\n";
+                        cin.clear(); cin.ignore(10000, '\n');
+                    }
+                } else if (fieldChoice == 4) {
+                    cout << "Current stock: " << p->getQuantity() << " units. Enter exact new quantity: ";
+                    if (cin >> newQty && newQty >= 0) {
+                        p->setQuantity(newQty);
+                        cout << "Inventory volume ledger levels calibrated.\n";
+                    } else {
+                        cout << "Validation error: Stock cannot fall below zero metrics.\n";
+                        cin.clear(); cin.ignore(10000, '\n');
+                    }
+                }
+            } else {
+                cout << "Enter new universal ID (or repeat current): "; cin >> newId;
                 cout << "Enter new name: "; cin >> newName;
                 cout << "Enter new price: ";
                 if (!(cin >> newPrice) || newPrice < 0) {
@@ -247,11 +223,11 @@ int main()
                     break;
                 }
                 
-                p->setId(newId);
-                p->setName(newName);
-                p->setPrice(newPrice);
-                p->setQuantity(newQty);
-                cout << "All product information updated successfully.\n";
+                if (system.updateProductInformation(oldId, newId, newName, newPrice)) {
+                    Product* updatedProd = system.findProductById(newId);
+                    if (updatedProd) updatedProd->setQuantity(newQty);
+                    cout << "All product information updated successfully.\n";
+                }
             }
             break;
         }
