@@ -18,6 +18,9 @@ public:
 
     void addCategory(const Category& category);
     void addProduct(const Product& product);
+    void removeProduct(const Product& product);
+    void removeCategory(const Category& category);
+
 
     Product* findProductById(const std::string& id);
 

@@ -9,10 +9,72 @@ void InventorySystem::addProduct(const Product& p)
     products.push_back(p);
 }
 
+
 void InventorySystem::addCategory(const Category& c)
 {
     categories.push_back(c);
 }
+
+
+void InventorySystem::removeProduct(const Product& p)
+{
+    bool found = false;
+    
+    for (size_t i = 0; i < products.size(); i++)
+    {
+        if (products[i].getId() == p.getId())
+        {
+            products.erase(products.begin() + i);
+            found = true;
+            i--; // Step back to evaluate the new element shifted into index 'i'
+        }
+    }
+
+    if (found)
+    {
+        std::cout << "Product with ID '" << p.getId() << "' removed successfully.\n";
+    }
+    else
+    {
+        std::cout << "Product not found. Removal failed.\n";
+    }
+}
+
+
+void InventorySystem::removeCategory(const Category& category)
+{
+    bool categoryFound = false;
+
+    // 1. Remove the Category from the categories vector
+    for (size_t i = 0; i < categories.size(); i++)
+    {
+        if (categories[i].getName() == category.getName())
+        {
+            categories.erase(categories.begin() + i);
+            categoryFound = true;
+            i--; 
+        }
+    }
+
+    if (!categoryFound)
+    {
+        std::cout << "Category '" << category.getName() << "' not found.\n";
+        return;
+    }
+
+    // 2. Cascade delete: Scan and remove any products associated with this category
+    for (size_t i = 0; i < products.size(); i++)
+    {
+        if (products[i].getCategory().getName() == category.getName())
+        {
+            products.erase(products.begin() + i);
+            i--; // Readjust pointer index to stay in sync with container layout contraction
+        }
+    }
+
+    std::cout << "Category '" << category.getName() << "' and all its items have been removed.\n";
+}
+
 
 void InventorySystem::showProducts() const
 {
